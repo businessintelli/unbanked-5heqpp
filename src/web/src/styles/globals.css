@@ -1,0 +1,147 @@
+/* globals.css - Unbanked Platform v1.0.0 */
+/* @fontsource/inter v5.0.0 - Variable font implementation */
+@import '@fontsource/inter/variable.css';
+
+/* Root variables - Light theme defaults */
+:root {
+  --font-sans: 'Inter var', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 
+               Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Base colors */
+  --background: 255 255 255;
+  --foreground: 17 24 39;
+  
+  /* Primary colors */
+  --primary: 0 102 255;
+  --primary-foreground: 255 255 255;
+  
+  /* Secondary colors */
+  --secondary: 107 114 128;
+  --secondary-foreground: 255 255 255;
+  
+  /* UI colors */
+  --muted: 245 245 245;
+  --muted-foreground: 107 114 128;
+  --accent: 244 245 246;
+  --accent-foreground: 17 24 39;
+  
+  /* Status colors */
+  --success: 16 185 129;
+  --error: 239 68 68;
+  --warning: 245 158 11;
+  
+  /* UI elements */
+  --border: 229 231 235;
+  --input: 229 231 235;
+  --ring: 0 102 255;
+  --radius: 0.5rem;
+}
+
+/* Dark theme overrides */
+[data-theme='dark'] {
+  --background: 17 24 39;
+  --foreground: 255 255 255;
+  
+  --primary: 51 133 255;
+  --primary-foreground: 255 255 255;
+  
+  --secondary: 156 163 175;
+  --secondary-foreground: 255 255 255;
+  
+  --muted: 31 41 55;
+  --muted-foreground: 156 163 175;
+  --accent: 31 41 55;
+  --accent-foreground: 255 255 255;
+  
+  --border: 63 63 70;
+  --input: 63 63 70;
+  --ring: 51 133 255;
+}
+
+/* Reset and base styles */
+* {
+  border-color: rgb(var(--border));
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Selection styles */
+::selection {
+  background: rgb(var(--primary) / 0.1);
+}
+
+/* Document level adjustments */
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+/* Body defaults */
+body {
+  background: rgb(var(--background));
+  color: rgb(var(--foreground));
+  min-height: 100vh;
+  line-height: 1.5;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  overflow-x: hidden;
+}
+
+/* Media elements */
+img,
+video,
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Form elements */
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+/* Accessibility - Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid rgb(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
