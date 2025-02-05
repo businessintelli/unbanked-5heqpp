@@ -1,0 +1,350 @@
+openapi: 3.0.0
+
+info:
+  title: Unbanked Authentication API
+  version: 1.0.0
+  description: Authentication and authorization endpoints with enhanced security features
+  contact:
+    name: Unbanked API Support
+    email: api-support@unbanked.com
+
+servers:
+  - url: https://api.unbanked.com/v1
+    description: Production server
+  - url: https://staging-api.unbanked.com/v1
+    description: Staging server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authenticated requests
+    mfaAuth:
+      type: apiKey
+      in: header
+      name: X-MFA-Token
+      description: MFA verification token for enhanced security
+
+  schemas:
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 12
+          maxLength: 128
+          pattern: ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$
+          description: Strong password with special characters, numbers, and mixed case
+        mfa_code:
+          type: string
+          pattern: ^[0-9]{6}$
+          nullable: true
+          description: 6-digit MFA code if enabled
+        device_id:
+          type: string
+          description: Unique device identifier for session management
+        consent:
+          type: object
+          properties:
+            data_processing:
+              type: boolean
+              description: GDPR consent for data processing
+            marketing:
+              type: boolean
+              description: Marketing communications consent
+          required:
+            - data_processing
+      required:
+        - email
+        - password
+
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 12
+          maxLength: 128
+          pattern: ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$
+        consent:
+          type: object
+          properties:
+            terms_of_service:
+              type: boolean
+            privacy_policy:
+              type: boolean
+            data_processing:
+              type: boolean
+          required:
+            - terms_of_service
+            - privacy_policy
+            - data_processing
+      required:
+        - email
+        - password
+        - consent
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+          description: Token expiration time in seconds
+        token_type:
+          type: string
+          enum: [Bearer]
+        mfa_required:
+          type: boolean
+          description: Indicates if MFA verification is required
+        kyc_status:
+          type: string
+          enum: [none, pending, approved, rejected]
+          description: Current KYC verification status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        status:
+          type: integer
+        code:
+          type: string
+          enum: [AUTH_001, AUTH_002, MFA_001, KYC_001, RATE_001]
+        details:
+          type: object
+          additionalProperties: true
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      operationId: registerUser
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too many registration attempts
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                description: Time in seconds to wait before retrying
+
+  /auth/login:
+    post:
+      summary: Authenticate user
+      operationId: loginUser
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too many login attempts
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+
+  /auth/mfa/enable:
+    post:
+      summary: Enable MFA for user account
+      operationId: enableMFA
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: MFA setup successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  secret:
+                    type: string
+                    description: TOTP secret for MFA setup
+                  qr_code:
+                    type: string
+                    format: uri
+                    description: QR code URI for MFA setup
+
+  /auth/mfa/verify:
+    post:
+      summary: Verify MFA code
+      operationId: verifyMFA
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mfa_code:
+                  type: string
+                  pattern: ^[0-9]{6}$
+              required:
+                - mfa_code
+      responses:
+        '200':
+          description: MFA verification successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/kyc/submit:
+    post:
+      summary: Submit KYC verification documents
+      operationId: submitKYC
+      tags: [KYC]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                id_document:
+                  type: string
+                  format: binary
+                proof_of_address:
+                  type: string
+                  format: binary
+                document_type:
+                  type: string
+                  enum: [passport, national_id, drivers_license]
+      responses:
+        '202':
+          description: KYC submission accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [pending]
+                  reference:
+                    type: string
+
+  /auth/kyc/status:
+    get:
+      summary: Check KYC verification status
+      operationId: getKYCStatus
+      tags: [KYC]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current KYC status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [none, pending, approved, rejected]
+                  details:
+                    type: object
+                    additionalProperties: true
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      operationId: refreshToken
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+              required:
+                - refresh_token
+      responses:
+        '200':
+          description: New access token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/logout:
+    post:
+      summary: Logout user and invalidate tokens
+      operationId: logoutUser
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Logout successful
+
+tags:
+  - name: Authentication
+    description: Authentication and session management endpoints
+  - name: KYC
+    description: Know Your Customer verification endpoints
