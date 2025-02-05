@@ -1,0 +1,37 @@
+# Default ownership - Core team reviews all unspecified files
+* @core-team
+
+# Security-sensitive code ownership
+.github/workflows/security.yml @security-team
+src/**/security.ts @security-team
+src/**/auth/ @security-team
+infrastructure/terraform/ @devops-team @security-team
+infrastructure/kubernetes/ @devops-team @security-team
+
+# Backend code ownership
+src/backend/ @backend-team
+src/backend/lib/auth/ @security-team @backend-team
+src/backend/lib/banking/ @banking-team @backend-team
+src/backend/lib/crypto/ @crypto-team @backend-team
+
+# Frontend code ownership
+src/web/ @frontend-team
+src/web/src/components/auth/ @security-team @frontend-team
+src/web/src/components/banking/ @banking-team @frontend-team
+src/web/src/components/crypto/ @crypto-team @frontend-team
+
+# Infrastructure and workflow ownership
+infrastructure/ @devops-team
+.github/workflows/ @devops-team
+
+# CI/CD workflow specific ownership
+.github/workflows/backend.yml @backend-team @devops-team
+.github/workflows/web.yml @frontend-team @devops-team
+
+# Documentation ownership
+docs/ @core-team @backend-team @frontend-team
+
+# Configuration files ownership
+*.config.js @core-team @devops-team
+*.config.ts @core-team @devops-team
+package.json @core-team @devops-team
