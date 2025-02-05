@@ -1,0 +1,376 @@
+openapi: 3.0.0
+info:
+  title: Unbanked Crypto API
+  version: 1.0.0
+  description: Enterprise-grade API for cryptocurrency operations including wallets, exchanges, and price tracking with performance optimizations and security controls
+
+# Reference auth components from auth.yaml
+components:
+  securitySchemes:
+    $ref: './auth.yaml#/components/securitySchemes'
+  
+  schemas:
+    CryptoWallet:
+      type: object
+      required:
+        - id
+        - user_id
+        - currency
+        - address
+        - balance
+        - is_custodial
+        - last_updated
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        currency:
+          type: string
+          enum: [BTC, ETH, USDT, USDC]
+        address:
+          type: string
+          pattern: '^(0x)?[0-9a-fA-F]{40}$|^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$'
+        balance:
+          type: string
+          pattern: '^\d+\.?\d*$'
+        is_custodial:
+          type: boolean
+        last_updated:
+          type: string
+          format: date-time
+
+    ExchangeRequest:
+      type: object
+      required:
+        - from_wallet_id
+        - to_wallet_id
+        - amount
+        - from_currency
+        - to_currency
+        - slippage_tolerance
+      properties:
+        from_wallet_id:
+          type: string
+          format: uuid
+        to_wallet_id:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          pattern: '^\d+\.?\d*$'
+        from_currency:
+          type: string
+          enum: [BTC, ETH, USDT, USDC]
+        to_currency:
+          type: string
+          enum: [BTC, ETH, USDT, USDC]
+        slippage_tolerance:
+          type: string
+          pattern: '^0?\.[0-9]{1,2}$'
+          maximum: 0.05
+          description: Maximum allowed slippage (up to 5%)
+
+    CryptoTransaction:
+      type: object
+      required:
+        - id
+        - wallet_id
+        - type
+        - amount
+        - currency
+        - status
+        - tx_hash
+        - fee
+        - block_confirmations
+      properties:
+        id:
+          type: string
+          format: uuid
+        wallet_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [DEPOSIT, WITHDRAWAL, EXCHANGE]
+        amount:
+          type: string
+          pattern: '^\d+\.?\d*$'
+        currency:
+          type: string
+          enum: [BTC, ETH, USDT, USDC]
+        status:
+          type: string
+          enum: [PENDING, COMPLETED, FAILED, CANCELLED]
+        tx_hash:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{64}$'
+        fee:
+          type: string
+          pattern: '^\d+\.?\d*$'
+        block_confirmations:
+          type: integer
+          minimum: 0
+
+  parameters:
+    PaginationParams:
+      in: query
+      name: pagination
+      schema:
+        type: object
+        properties:
+          page:
+            type: integer
+            minimum: 1
+            default: 1
+          limit:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          sort_by:
+            type: string
+          sort_order:
+            type: string
+            enum: [asc, desc]
+            default: desc
+
+paths:
+  /api/v1/crypto/wallets:
+    get:
+      summary: List user's crypto wallets
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PaginationParams'
+      responses:
+        '200':
+          description: Successfully retrieved wallets
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [success]
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CryptoWallet'
+        '401':
+          $ref: './auth.yaml#/components/responses/UnauthorizedError'
+        '429':
+          $ref: './auth.yaml#/components/responses/TooManyRequests'
+
+    post:
+      summary: Create a new crypto wallet
+      security:
+        - bearerAuth: []
+        - mfa: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currency
+                - is_custodial
+              properties:
+                currency:
+                  type: string
+                  enum: [BTC, ETH, USDT, USDC]
+                is_custodial:
+                  type: boolean
+      responses:
+        '201':
+          description: Wallet created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [success]
+                  data:
+                    $ref: '#/components/schemas/CryptoWallet'
+
+  /api/v1/crypto/exchange/quote:
+    post:
+      summary: Get exchange quote
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExchangeRequest'
+      responses:
+        '200':
+          description: Exchange quote retrieved
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: 'max-age=15'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [success]
+                  data:
+                    type: object
+                    properties:
+                      quote_id:
+                        type: string
+                        format: uuid
+                      rate:
+                        type: string
+                      fee:
+                        type: string
+                      expiry:
+                        type: string
+                        format: date-time
+
+  /api/v1/crypto/exchange/execute:
+    post:
+      summary: Execute exchange
+      security:
+        - bearerAuth: []
+        - mfa: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quote_id
+              properties:
+                quote_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Exchange executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [success]
+                  data:
+                    $ref: '#/components/schemas/CryptoTransaction'
+
+  /api/v1/crypto/prices:
+    get:
+      summary: Get current crypto prices
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: currencies
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [BTC, ETH, USDT, USDC]
+      responses:
+        '200':
+          description: Current prices retrieved
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: 'max-age=30'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [success]
+                  data:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        price:
+                          type: string
+                        change_24h:
+                          type: string
+                        updated_at:
+                          type: string
+                          format: date-time
+
+  /api/v1/crypto/transactions:
+    get:
+      summary: List crypto transactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PaginationParams'
+        - in: query
+          name: wallet_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [DEPOSIT, WITHDRAWAL, EXCHANGE]
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [PENDING, COMPLETED, FAILED, CANCELLED]
+      responses:
+        '200':
+          description: Transactions retrieved successfully
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [success]
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CryptoTransaction'
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      pages:
+                        type: integer
