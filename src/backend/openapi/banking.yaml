@@ -1,0 +1,475 @@
+openapi: 3.0.0
+info:
+  title: Unbanked Banking API
+  version: v1
+  description: Banking services API for the Unbanked platform
+  contact:
+    name: Unbanked Support
+    email: support@unbanked.com
+
+servers:
+  - url: https://api.unbanked.com/v1
+    description: Production server
+  - url: https://staging-api.unbanked.com/v1
+    description: Staging server
+
+tags:
+  - name: Wallets
+    description: Multi-currency wallet management
+  - name: Transactions
+    description: Banking transaction operations
+  - name: Plaid
+    description: Plaid integration endpoints
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    
+  schemas:
+    Wallet:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        currency:
+          type: string
+          enum: [USD, EUR, GBP]
+        balance:
+          type: number
+          format: decimal
+          minimum: 0
+        active:
+          type: boolean
+        daily_limit:
+          type: number
+          minimum: 0
+        monthly_limit:
+          type: number
+          minimum: 0
+        plaid_access_token:
+          type: string
+          nullable: true
+        last_sync:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          minimum: 1
+      required:
+        - id
+        - user_id
+        - currency
+        - balance
+        - active
+        - daily_limit
+        - monthly_limit
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        wallet_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [DEPOSIT, WITHDRAWAL, TRANSFER, FEE, REFUND, ADJUSTMENT]
+        amount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+          enum: [USD, EUR, GBP]
+        status:
+          type: string
+          enum: [PENDING, COMPLETED, FAILED, CANCELLED]
+        reference:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        fee:
+          type: number
+          minimum: 0
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - wallet_id
+        - type
+        - amount
+        - currency
+        - status
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          enum:
+            - VALIDATION_ERROR
+            - UNAUTHORIZED
+            - FORBIDDEN
+            - NOT_FOUND
+            - RATE_LIMIT
+            - INTERNAL_ERROR
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+      required:
+        - code
+        - message
+
+paths:
+  /banking/wallets:
+    post:
+      tags: [Wallets]
+      summary: Create a new wallet
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currency:
+                  type: string
+                  enum: [USD, EUR, GBP]
+                daily_limit:
+                  type: number
+                  minimum: 0
+                monthly_limit:
+                  type: number
+                  minimum: 0
+              required:
+                - currency
+      responses:
+        '201':
+          description: Wallet created successfully
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+              description: Correlation ID for request tracking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+    get:
+      tags: [Wallets]
+      summary: List user wallets
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: currency
+          in: query
+          schema:
+            type: string
+            enum: [USD, EUR, GBP]
+      responses:
+        '200':
+          description: List of user wallets
+          headers:
+            X-Total-Count:
+              schema:
+                type: integer
+              description: Total number of wallets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Wallet'
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /banking/wallets/{walletId}:
+    parameters:
+      - name: walletId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    
+    get:
+      tags: [Wallets]
+      summary: Get wallet details
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Wallet details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /banking/wallets/{walletId}/transactions:
+    parameters:
+      - name: walletId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    
+    post:
+      tags: [Transactions]
+      summary: Create a new transaction
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [DEPOSIT, WITHDRAWAL, TRANSFER]
+                amount:
+                  type: number
+                  format: decimal
+                  minimum: 0.01
+                description:
+                  type: string
+                  maxLength: 255
+                category:
+                  type: string
+                metadata:
+                  type: object
+                  additionalProperties: true
+              required:
+                - type
+                - amount
+                - description
+      responses:
+        '201':
+          description: Transaction created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+    get:
+      tags: [Transactions]
+      summary: List wallet transactions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [DEPOSIT, WITHDRAWAL, TRANSFER, FEE, REFUND, ADJUSTMENT]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, COMPLETED, FAILED, CANCELLED]
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: List of transactions
+          headers:
+            X-Total-Count:
+              schema:
+                type: integer
+              description: Total number of transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /banking/plaid/link:
+    post:
+      tags: [Plaid]
+      summary: Create Plaid link token
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Plaid link token created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  link_token:
+                    type: string
+                  expiration:
+                    type: string
+                    format: date-time
+                required:
+                  - link_token
+                  - expiration
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+components:
+  responses:
+    Unauthorized:
+      description: Authentication required or token invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ValidationError:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    RateLimitExceeded:
+      description: Too many requests
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Request limit per window
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Remaining requests in window
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Time until window reset in seconds
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+security:
+  - BearerAuth: []
