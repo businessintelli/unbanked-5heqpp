@@ -1,0 +1,179 @@
+name: Security Scanning
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly comprehensive security scan
+  pull_request:
+    branches: 
+      - main
+      - staging
+    paths:
+      - '**/package.json'
+      - '**/package-lock.json'
+      - 'src/**'
+      - '.github/workflows/**'
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  pull-requests: write
+
+env:
+  NODE_VERSION: '18.x'
+  HIGH_SEVERITY_THRESHOLD: 0
+  MEDIUM_SEVERITY_THRESHOLD: 5
+
+jobs:
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Snyk
+        uses: snyk/actions/setup@v3
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Scan Backend Dependencies
+        run: |
+          cd src/backend
+          snyk test \
+            --severity-threshold=high \
+            --fail-on=upgradable \
+            --all-projects \
+            --json > backend-vulnerabilities.json
+
+      - name: Scan Frontend Dependencies
+        run: |
+          cd src/web
+          snyk test \
+            --severity-threshold=high \
+            --fail-on=upgradable \
+            --all-projects \
+            --json > frontend-vulnerabilities.json
+
+      - name: Generate Vulnerability Report
+        run: |
+          echo "### Dependency Scan Results" > security-report.md
+          echo "#### Backend Vulnerabilities" >> security-report.md
+          jq -r '.vulnerabilities | length' src/backend/backend-vulnerabilities.json >> security-report.md
+          echo "#### Frontend Vulnerabilities" >> security-report.md
+          jq -r '.vulnerabilities | length' src/web/frontend-vulnerabilities.json >> security-report.md
+
+      - name: Upload Scan Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-scan-results
+          path: |
+            src/backend/backend-vulnerabilities.json
+            src/web/frontend-vulnerabilities.json
+            security-report.md
+
+  code-analysis:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript, typescript
+          queries: security-extended,security-and-quality
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:javascript,typescript"
+          upload: true
+          output: sarif-results
+
+      - name: Upload SARIF Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: codeql-results
+          path: sarif-results
+
+  secret-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: GitLeaks Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+          GITLEAKS_CONFIG: ./.github/gitleaks/gitleaks.toml
+        with:
+          config-path: ./.github/gitleaks/gitleaks.toml
+          format: sarif
+          report-path: gitleaks-report.sarif
+
+      - name: Upload Secret Scan Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: secret-scan-results
+          path: gitleaks-report.sarif
+
+  security-report:
+    name: Generate Security Report
+    needs: [dependency-scan, code-analysis, secret-scan]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download All Results
+        uses: actions/download-artifact@v3
+        with:
+          path: security-results
+
+      - name: Generate Comprehensive Report
+        run: |
+          echo "# Security Scan Results" > security-summary.md
+          echo "## Dependency Vulnerabilities" >> security-summary.md
+          cat security-results/dependency-scan-results/security-report.md >> security-summary.md
+          echo "## Code Analysis Findings" >> security-summary.md
+          jq -r '.runs[].results | length' security-results/codeql-results/javascript.sarif >> security-summary.md
+          echo "## Secret Detection Results" >> security-summary.md
+          jq -r '.runs[].results | length' security-results/secret-scan-results/gitleaks-report.sarif >> security-summary.md
+
+      - name: Create Pull Request Comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('security-summary.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+
+      - name: Upload Final Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-report
+          path: security-summary.md
