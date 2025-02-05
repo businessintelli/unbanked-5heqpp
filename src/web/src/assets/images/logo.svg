@@ -1,0 +1,51 @@
+<svg 
+  xmlns="http://www.w3.org/2000/svg" 
+  viewBox="0 0 200 50" 
+  fill="currentColor"
+  preserveAspectRatio="xMidYMid meet"
+  role="img"
+  aria-label="Unbanked logo"
+>
+  <!-- Letter U -->
+  <path 
+    d="M20 10v20c0 5.523 4.477 10 10 10s10-4.477 10-10V10"
+    stroke="currentColor"
+    stroke-width="4"
+    stroke-linecap="round"
+    fill="none"
+  />
+  
+  <!-- Letters nbanked -->
+  <path 
+    d="M50 40V20h4c3.314 0 6 2.686 6 6v14M70 40V20l15 20V20"
+    stroke="currentColor"
+    stroke-width="4"
+    stroke-linecap="round"
+    fill="none"
+  />
+  
+  <!-- Bank symbol -->
+  <path 
+    d="M100 15l10-8 10 8v4h-20v-4zm2 4h16v16h-16v-16z"
+    fill="currentColor"
+  />
+  
+  <!-- Letters ed -->
+  <path 
+    d="M130 30c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10-10-4.477-10-10z
+       M160 30c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10-10-4.477-10-10z"
+    stroke="currentColor"
+    stroke-width="4"
+    stroke-linecap="round"
+    fill="none"
+  />
+  
+  <!-- Decorative fintech element -->
+  <path 
+    d="M185 25l8-8 -4-4 4 4 4-4"
+    stroke="#4F46E5"
+    stroke-width="2"
+    stroke-linecap="round"
+    fill="none"
+  />
+</svg>
