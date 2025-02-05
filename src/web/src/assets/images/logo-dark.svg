@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="240" height="80" viewBox="0 0 240 80" 
+    xmlns="http://www.w3.org/2000/svg" 
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    preserveAspectRatio="xMidYMid meet"
+    role="img"
+    aria-label="Unbanked logo"
+    focusable="false"
+    aria-hidden="true">
+    
+    <!-- Definitions for reusable elements -->
+    <defs>
+        <!-- Gradient for subtle depth -->
+        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:rgb(255,255,255);stop-opacity:1" />
+            <stop offset="100%" style="stop-color:rgb(255,255,255);stop-opacity:0.9" />
+        </linearGradient>
+        
+        <!-- Symbol mark for reuse -->
+        <symbol id="bankSymbol" viewBox="0 0 40 40">
+            <path d="M20 0L40 15H0L20 0Z" fill="url(#logoGradient)"/>
+            <rect x="5" y="18" width="30" height="20" fill="url(#logoGradient)"/>
+            <rect x="0" y="38" width="40" height="2" fill="url(#logoGradient)"/>
+        </symbol>
+    </defs>
+
+    <!-- Main logo group -->
+    <g>
+        <!-- Symbol -->
+        <use href="#bankSymbol" x="10" y="20" width="40" height="40"/>
+        
+        <!-- Wordmark -->
+        <g fill="url(#logoGradient)">
+            <!-- U -->
+            <path d="M70 25v20c0 2.2 1.8 4 4 4h8c2.2 0 4-1.8 4-4V25h-4v20h-8V25h-4z"/>
+            <!-- n -->
+            <path d="M95 25v24h4v-3c1.5 2 3.8 3 6 3 4.4 0 8-3.6 8-8V25h-4v16c0 2.2-1.8 4-4 4s-4-1.8-4-4V25h-6z"/>
+            <!-- b -->
+            <path d="M120 15v34h4v-3c1.5 2 3.8 3 6 3 6.6 0 12-5.4 12-12s-5.4-12-12-12c-2.2 0-4.5 1-6 3v-13h-4zm10 28c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8z"/>
+            <!-- a -->
+            <path d="M150 25v3c1.5-2 3.8-3 6-3 4.4 0 8 3.6 8 8v16h-4V33c0-2.2-1.8-4-4-4s-4 1.8-4 4v16h-4V25h2z"/>
+            <!-- n -->
+            <path d="M175 25v24h4v-3c1.5 2 3.8 3 6 3 4.4 0 8-3.6 8-8V25h-4v16c0 2.2-1.8 4-4 4s-4-1.8-4-4V25h-6z"/>
+            <!-- k -->
+            <path d="M200 15v34h4V35l10 14h5l-11-15 11-15h-5l-10 14V15h-4z"/>
+            <!-- e -->
+            <path d="M225 25c-6.6 0-12 5.4-12 12s5.4 12 12 12 12-5.4 12-12h-20c.5-4.4 4.2-8 8-8 2.2 0 4.5 1 6 3l3-3c-2.5-2.5-5.8-4-9-4zm-8 14h16c-.5 4.4-4.2 8-8 8s-7.5-3.6-8-8z"/>
+            <!-- d -->
+            <path d="M245 15v13c-1.5-2-3.8-3-6-3-6.6 0-12 5.4-12 12s5.4 12 12 12c2.2 0 4.5-1 6-3v3h4V15h-4zm-6 28c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8z"/>
+        </g>
+    </g>
+
+    <!-- Accessibility and theme support -->
+    <style>
+        @media (prefers-color-scheme: dark) {
+            #logoGradient stop {
+                stop-color: var(--logo-primary, rgb(255, 255, 255));
+            }
+        }
+        @media (max-width: 640px) {
+            svg { height: 24px; }
+        }
+        @media (min-width: 641px) and (max-width: 768px) {
+            svg { height: 32px; }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+            svg { height: 40px; }
+        }
+        @media (min-width: 1025px) {
+            svg { height: 48px; }
+        }
+    </style>
+</svg>
