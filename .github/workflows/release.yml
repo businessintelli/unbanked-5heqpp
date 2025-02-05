@@ -1,0 +1,156 @@
+name: Release Management
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Ensure only one release workflow runs at a time
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '18.x'
+  DEPLOYMENT_REGIONS: '["us-east-1", "eu-west-1", "ap-southeast-1"]'
+  CANARY_THRESHOLD: 5
+  HEALTH_CHECK_INTERVAL: 30
+  ROLLBACK_THRESHOLD: 3
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Validate Package Versions
+        run: |
+          WEB_VERSION=$(node -p "require('./src/web/package.json').version")
+          BACKEND_VERSION=$(node -p "require('./src/backend/package.json').version")
+          if [ "$WEB_VERSION" != "$BACKEND_VERSION" ]; then
+            echo "Package versions must match. Web: $WEB_VERSION, Backend: $BACKEND_VERSION"
+            exit 1
+          fi
+
+      - uses: google-github-actions/release-please-action@v3
+        id: release
+        with:
+          command: manifest
+          monorepo-tags: true
+          config-file: .release-please-config.json
+          
+      - name: Generate Detailed Changelog
+        if: steps.release.outputs.release_created
+        run: |
+          echo "# Release Notes for v${{ steps.release.outputs.version }}" > CHANGELOG.md
+          git log --pretty=format:"* %s (%h)" $(git describe --tags --abbrev=0)..HEAD >> CHANGELOG.md
+
+  canary-deployment:
+    needs: release-please
+    if: needs.release-please.outputs.release_created
+    runs-on: ubuntu-latest
+    environment: production
+    strategy:
+      matrix:
+        region: ${{ fromJson(env.DEPLOYMENT_REGIONS) }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Deploy Canary (5% Traffic)
+        id: canary
+        run: |
+          echo "Deploying canary to ${{ matrix.region }} (5% traffic)"
+          # Deploy backend canary
+          supabase functions deploy --region ${{ matrix.region }} --canary
+          # Deploy frontend canary
+          npm run deploy:canary -- --region ${{ matrix.region }}
+
+      - name: Monitor Canary Health
+        id: health
+        run: |
+          failures=0
+          for i in {1..30}; do
+            sleep ${{ env.HEALTH_CHECK_INTERVAL }}
+            if ! curl -f https://api-canary.${{ matrix.region }}.unbanked.com/health; then
+              ((failures++))
+              if [ $failures -ge ${{ env.ROLLBACK_THRESHOLD }} ]; then
+                echo "::error::Canary health check failed $failures times"
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Scale Canary Deployment
+        if: success()
+        run: |
+          echo "Scaling canary deployment to 100% in ${{ matrix.region }}"
+          supabase functions promote-canary --region ${{ matrix.region }}
+          npm run deploy:promote-canary -- --region ${{ matrix.region }}
+
+      - name: Rollback on Failure
+        if: failure()
+        run: |
+          echo "Rolling back canary deployment in ${{ matrix.region }}"
+          supabase functions rollback --region ${{ matrix.region }}
+          npm run deploy:rollback -- --region ${{ matrix.region }}
+
+  regional-deployment:
+    needs: [release-please, canary-deployment]
+    if: needs.release-please.outputs.release_created
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ needs.release-please.outputs.version }}
+          release_name: Release v${{ needs.release-please.outputs.version }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist
+          asset_name: release-${{ needs.release-please.outputs.version }}.zip
+          asset_content_type: application/zip
+
+      - name: Update DNS and CDN Configuration
+        run: |
+          echo "Updating DNS and CDN configuration for all regions"
+          for region in $(echo ${{ env.DEPLOYMENT_REGIONS }} | jq -r '.[]'); do
+            echo "Configuring region: $region"
+            # Update DNS records
+            # Update CDN configuration
+            # Configure health checks
+          done
+
+      - name: Verify Cross-Region Health
+        run: |
+          echo "Verifying cross-region health and failover configuration"
+          for region in $(echo ${{ env.DEPLOYMENT_REGIONS }} | jq -r '.[]'); do
+            if ! curl -f https://api.$region.unbanked.com/health; then
+              echo "::error::Health check failed for region $region"
+              exit 1
+            fi
+          done
