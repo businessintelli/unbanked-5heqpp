@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="antialiased">
+<head>
+  <!-- Character encoding and viewport -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+  <!-- Primary Meta Tags -->
+  <title>Unbanked - Modern Financial Platform</title>
+  <meta name="description" content="Unbanked - Modern financial platform bridging traditional banking with cryptocurrency capabilities">
+  <meta name="theme-color" content="#0066FF">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- Security Headers -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+
+  <!-- Preconnect to critical domains -->
+  <link rel="preconnect" href="https://api.unbanked.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+
+  <!-- Preload critical assets -->
+  <link rel="modulepreload" href="/src/main.tsx" as="script">
+  <link rel="preload" href="/fonts/inter-var-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/src/styles/globals.css">
+  <link rel="stylesheet" href="/src/styles/tailwind.css">
+
+  <!-- PWA manifest and icons -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Unbanked - Modern Financial Platform">
+  <meta property="og:description" content="Unbanked - Modern financial platform bridging traditional banking with cryptocurrency capabilities">
+  <meta property="og:image" content="/og-image.png">
+  <meta property="og:url" content="https://unbanked.com">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Unbanked - Modern Financial Platform">
+  <meta name="twitter:description" content="Unbanked - Modern financial platform bridging traditional banking with cryptocurrency capabilities">
+  <meta name="twitter:image" content="/og-image.png">
+
+  <!-- Performance optimization -->
+  <script type="module" src="/src/main.tsx"></script>
+</head>
+<body class="bg-background text-foreground antialiased">
+  <!-- Application root with ARIA role -->
+  <div id="root" role="main"></div>
+
+  <!-- Accessible no-script message -->
+  <noscript>
+    <div role="alert" class="flex items-center justify-center min-h-screen p-4 text-center">
+      <div class="max-w-md">
+        <h1 class="text-xl font-semibold mb-2">JavaScript Required</h1>
+        <p>You need to enable JavaScript to run this app. Please enable JavaScript in your browser settings and reload the page.</p>
+      </div>
+    </div>
+  </noscript>
+
+  <!-- Error boundary fallback -->
+  <div id="error-root" role="alert" aria-live="assertive" hidden></div>
+
+  <!-- Portal container for modals -->
+  <div id="portal-root"></div>
+</body>
+</html>
