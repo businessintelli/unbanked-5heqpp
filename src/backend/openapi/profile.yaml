@@ -1,0 +1,341 @@
+openapi: 3.0.0
+info:
+  title: Unbanked Profile API
+  version: 1.0.0
+  description: Secure API endpoints for managing user profiles with GDPR compliance
+  contact:
+    name: Unbanked API Support
+    email: api-support@unbanked.com
+
+servers:
+  - url: https://api.unbanked.com/v1
+    description: Production server
+  - url: https://staging-api.unbanked.com/v1
+    description: Staging server
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Address:
+      type: object
+      required:
+        - street_address
+        - city
+        - state
+        - postal_code
+        - country
+      properties:
+        street_address:
+          type: string
+          maxLength: 100
+        city:
+          type: string
+          maxLength: 50
+        state:
+          type: string
+          maxLength: 50
+        postal_code:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          pattern: ^[A-Z]{2}$
+          description: ISO 3166-1 alpha-2 country code
+
+    UserPreferences:
+      type: object
+      properties:
+        language:
+          type: string
+          pattern: ^[a-z]{2}(-[A-Z]{2})?$
+          description: ISO 639-1 language code
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+          description: ISO 4217 currency code
+        notifications_enabled:
+          type: boolean
+        two_factor_enabled:
+          type: boolean
+        theme:
+          type: string
+          enum: [light, dark, system]
+        privacy_mode:
+          type: boolean
+
+    GDPRConsent:
+      type: object
+      required:
+        - marketing_consent
+        - data_processing_consent
+        - consent_date
+        - consent_ip
+      properties:
+        marketing_consent:
+          type: boolean
+        data_processing_consent:
+          type: boolean
+        consent_date:
+          type: string
+          format: date-time
+        consent_ip:
+          type: string
+          format: ipv4
+
+    SecuritySettings:
+      type: object
+      properties:
+        login_notifications:
+          type: boolean
+        transaction_notifications:
+          type: boolean
+        allowed_ips:
+          type: array
+          items:
+            type: string
+            format: ipv4
+        last_security_update:
+          type: string
+          format: date-time
+
+    Profile:
+      type: object
+      required:
+        - user_id
+        - first_name
+        - last_name
+        - email
+        - phone_number
+        - date_of_birth
+        - address
+        - kyc_level
+        - status
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        email:
+          type: string
+          format: email
+        phone_number:
+          type: string
+          pattern: ^\+[1-9]\d{1,14}$
+        date_of_birth:
+          type: string
+          format: date
+        address:
+          $ref: '#/components/schemas/Address'
+        kyc_level:
+          type: string
+          enum: [NONE, BASIC, VERIFIED, ENHANCED]
+        status:
+          type: string
+          enum: [ACTIVE, SUSPENDED, DEACTIVATED, GDPR_DELETED]
+        preferences:
+          $ref: '#/components/schemas/UserPreferences'
+        gdpr_consent:
+          $ref: '#/components/schemas/GDPRConsent'
+        security_settings:
+          $ref: '#/components/schemas/SecuritySettings'
+        metadata:
+          type: object
+          properties:
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+            version:
+              type: integer
+            last_modified_by:
+              type: string
+              format: uuid
+
+    ProfileUpdateRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        phone_number:
+          type: string
+          pattern: ^\+[1-9]\d{1,14}$
+        address:
+          $ref: '#/components/schemas/Address'
+        preferences:
+          $ref: '#/components/schemas/UserPreferences'
+        gdpr_consent:
+          $ref: '#/components/schemas/GDPRConsent'
+        security_settings:
+          $ref: '#/components/schemas/SecuritySettings'
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum: [VALIDATION_ERROR, UNAUTHORIZED, FORBIDDEN, NOT_FOUND, RATE_LIMIT, INTERNAL_ERROR]
+        message:
+          type: string
+        details:
+          type: object
+
+paths:
+  /profile:
+    get:
+      summary: Retrieve user profile
+      description: Get the authenticated user's profile with security metadata
+      operationId: getProfile
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/ApiVersion'
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+    put:
+      summary: Update user profile
+      description: Update the authenticated user's profile with GDPR compliance
+      operationId: updateProfile
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/ApiVersion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /profile/gdpr:
+    delete:
+      summary: Request GDPR data deletion
+      description: Initiate GDPR-compliant data deletion process
+      operationId: requestGDPRDeletion
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/ApiVersion'
+      responses:
+        '202':
+          description: Deletion request accepted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+components:
+  parameters:
+    RequestId:
+      name: X-Request-ID
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Unique request identifier for tracing
+    
+    ApiVersion:
+      name: X-API-Version
+      in: header
+      required: true
+      schema:
+        type: string
+        enum: [2024-01]
+      description: API version identifier
+
+  responses:
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: Permission denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    RateLimited:
+      description: Too many requests
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds to wait before retrying
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
