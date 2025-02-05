@@ -1,0 +1,45 @@
+# Kubernetes Service configuration for Unbanked platform backend services
+# Version: kubernetes v1.25+
+# Purpose: Expose backend services with load balancing and monitoring capabilities
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: unbanked
+  labels:
+    app: backend
+    environment: production
+    component: api
+    managed-by: kubernetes
+  annotations:
+    # Prometheus monitoring configuration
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+    # AWS Load Balancer configuration
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+
+spec:
+  type: ClusterIP
+  ports:
+    # Main application port
+    - port: 80
+      targetPort: 3000
+      protocol: TCP
+      name: http
+    # Metrics port for monitoring
+    - port: 9090
+      targetPort: 9090
+      protocol: TCP
+      name: metrics
+  
+  # Selector for backend pods
+  selector:
+    app: backend
+    environment: production
+  
+  # Session configuration
+  sessionAffinity: None
+  publishNotReadyAddresses: false
