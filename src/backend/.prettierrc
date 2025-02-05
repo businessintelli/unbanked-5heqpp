@@ -1,0 +1,30 @@
+{
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+  "semi": true,
+  "singleQuote": true,
+  "quoteProps": "as-needed",
+  "trailingComma": "es5",
+  "bracketSpacing": true,
+  "bracketSameLine": false,
+  "arrowParens": "always",
+  "proseWrap": "preserve",
+  "endOfLine": "lf",
+  "parser": "typescript",
+  "embeddedLanguageFormatting": "auto",
+  "overrides": [
+    {
+      "files": "*.{ts,tsx}",
+      "options": {
+        "parser": "typescript"
+      }
+    },
+    {
+      "files": "*.{json,yaml,yml}",
+      "options": {
+        "tabWidth": 2
+      }
+    }
+  ]
+}
