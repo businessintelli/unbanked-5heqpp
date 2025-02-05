@@ -1,0 +1,179 @@
+/* Unbanked Platform - Tailwind CSS v3.0.0 */
+@import './globals.css';
+
+/* Base layer with Tailwind defaults */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base layer customizations */
+@layer base {
+  /* Enhanced focus styles for keyboard navigation */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background transition-shadow duration-200;
+  }
+
+  /* Motion-safe animations and transitions */
+  @media (prefers-reduced-motion: no-preference) {
+    :root {
+      --transition-duration: 200ms;
+      --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+
+  /* Reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --transition-duration: 0ms;
+      --transition-timing: linear;
+    }
+  }
+}
+
+/* Component layer customizations */
+@layer components {
+  /* Material Design elevation utilities */
+  .elevation-1 {
+    @apply shadow-sm bg-surface transition-shadow duration-200;
+  }
+
+  .elevation-2 {
+    @apply shadow bg-surface transition-shadow duration-200;
+  }
+
+  .elevation-3 {
+    @apply shadow-md bg-surface transition-shadow duration-200;
+  }
+
+  .elevation-4 {
+    @apply shadow-lg bg-surface transition-shadow duration-200;
+  }
+
+  .elevation-5 {
+    @apply shadow-xl bg-surface transition-shadow duration-200;
+  }
+
+  /* Enhanced scrollbar styling */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--primary)) rgb(var(--muted));
+    scrollbar-gutter: stable;
+    @apply overscroll-contain;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-muted rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-primary bg-opacity-50 rounded-full hover:bg-opacity-75 transition-colors;
+  }
+
+  /* Enhanced focus ring for interactive elements */
+  .custom-focus {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary 
+           focus-visible:ring-offset-2 focus-visible:ring-offset-background 
+           transition-shadow duration-200;
+  }
+}
+
+/* Utility layer customizations */
+@layer utilities {
+  /* Screen reader utilities */
+  .sr-only {
+    @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  /* High contrast mode adjustments */
+  @media (forced-colors: active) {
+    .high-contrast-outline {
+      @apply outline outline-2 outline-current;
+    }
+  }
+
+  /* Container query utilities */
+  @container (min-width: theme('screens.sm')) {
+    .container-sm {
+      @apply max-w-sm mx-auto;
+    }
+  }
+
+  @container (min-width: theme('screens.md')) {
+    .container-md {
+      @apply max-w-md mx-auto;
+    }
+  }
+
+  @container (min-width: theme('screens.lg')) {
+    .container-lg {
+      @apply max-w-lg mx-auto;
+    }
+  }
+
+  @container (min-width: theme('screens.xl')) {
+    .container-xl {
+      @apply max-w-xl mx-auto;
+    }
+  }
+
+  @container (min-width: theme('screens.2xl')) {
+    .container-2xl {
+      @apply max-w-2xl mx-auto;
+    }
+  }
+
+  /* Touch target size utilities */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Motion safe animations */
+  @media (prefers-reduced-motion: no-preference) {
+    .animate-fade-in {
+      @apply opacity-0 animate-[fade-in_var(--transition-duration)_var(--transition-timing)_forwards];
+    }
+
+    .animate-slide-in {
+      @apply translate-y-4 opacity-0 animate-[slide-in_var(--transition-duration)_var(--transition-timing)_forwards];
+    }
+  }
+}
+
+/* Color contrast utilities */
+.text-high-contrast {
+  @apply text-foreground;
+}
+
+.text-medium-contrast {
+  @apply text-muted-foreground;
+}
+
+/* Theme transition utilities */
+.theme-transition {
+  @apply transition-colors duration-200;
+}
+
+/* Responsive typography scale */
+.text-scale-base {
+  @apply text-base sm:text-lg lg:text-xl;
+}
+
+.text-scale-lg {
+  @apply text-lg sm:text-xl lg:text-2xl;
+}
+
+.text-scale-xl {
+  @apply text-xl sm:text-2xl lg:text-3xl;
+}
+
+/* Print styles */
+@media print {
+  .print-hidden {
+    display: none !important;
+  }
+}
