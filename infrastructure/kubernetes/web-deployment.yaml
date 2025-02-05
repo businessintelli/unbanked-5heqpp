@@ -1,0 +1,114 @@
+# Kubernetes Deployment configuration for Unbanked web frontend
+# API Version: apps/v1
+# Component: React + TypeScript web application
+# Environment: Production
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unbanked-web
+  namespace: production
+  labels:
+    app: unbanked
+    component: web
+    environment: production
+    tier: frontend
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "80"
+    prometheus.io/path: "/metrics"
+    datadog.com/enable: "true"
+    sentry.io/enable: "true"
+
+spec:
+  # High availability configuration with 3 replicas
+  replicas: 3
+  
+  # Zero-downtime deployment strategy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  
+  # Pod selector
+  selector:
+    matchLabels:
+      app: unbanked
+      component: web
+  
+  # Pod template specification
+  template:
+    metadata:
+      labels:
+        app: unbanked
+        component: web
+    
+    spec:
+      # Security configuration
+      serviceAccountName: unbanked-web-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      
+      containers:
+        - name: web
+          image: unbanked/web:latest
+          imagePullPolicy: Always
+          
+          # Container security context
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          
+          # Container port configuration
+          ports:
+            - containerPort: 80
+              name: http
+          
+          # Resource requests and limits
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          
+          # Health checks
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          
+          startupProbe:
+            httpGet:
+              path: /startup
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30
+          
+          # Environment configuration
+          envFrom:
+            - configMapRef:
+                name: unbanked-config
+            - secretRef:
+                name: unbanked-secrets
