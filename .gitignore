@@ -1,0 +1,96 @@
+node_modules/
+pnpm-lock.yaml
+.pnpm-store/
+.npm/
+package-lock.json
+yarn.lock
+
+# Build Output
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+.vite/
+storybook-static/
+*.js.map
+*.d.ts
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+.pgpass
+*.pfx
+*.p12
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+.history/
+*.sublime-*
+.project
+.settings/
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+cypress/videos/
+cypress/screenshots/
+**/__snapshots__/
+*.spec.js.snap
+test-results/
+playwright-report/
+
+# Logs & Debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+debug.log
+lerna-debug.log*
+.clinic/
+.debug/
+
+# Cache
+.cache/
+.temp/
+.eslintcache
+.stylelintcache
+.parcel-cache/
+.rollup.cache/
+tsconfig.tsbuildinfo
+.webpack/
+
+# Development-specific
+coverage/
+.vscode/
+*.log
+.env.local
+.env.development
+
+# Production-specific
+tests/
+*.test.ts
+*.test.tsx
+.env.test
+cypress/
+
+# Repository Optimization
+node_modules/
+dist/
+coverage/
+.pnpm-store/
+.cache/
+.temp/
+*.tsbuildinfo
+.eslintcache
+.parcel-cache/
