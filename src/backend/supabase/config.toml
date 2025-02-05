@@ -1,0 +1,159 @@
+# Project Configuration
+[project]
+name = "unbanked"
+organization_id = "org_id"
+
+# API Configuration
+[api]
+enabled_apis = ["rest", "realtime", "storage", "edge-functions"]
+port = 54321
+max_rows = 1000
+request_timeout = 10
+
+# Database Configuration
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+max_connections = 100
+
+# Database Extensions
+[db.extensions]
+enabled = [
+  "uuid-ossp",   # UUID generation
+  "pgcrypto",    # Cryptographic functions
+  "pg_stat_statements",  # Query performance monitoring
+  "pg_partman",  # Partition management
+  "pg_cron",     # Job scheduling
+  "plpgsql_check" # PL/pgSQL code analysis
+]
+
+# Authentication Configuration
+[auth]
+site_url = "http://localhost:3000"
+jwt_expiry = 900  # 15 minutes
+enable_signup = true
+
+[auth.mfa]
+enabled = true
+enforcement_level = "mandatory"
+
+[auth.security]
+security_level = "strict"
+# Enforces strong password policies and session management
+
+# Storage Configuration
+[storage]
+file_size_limit = "50MiB"
+allowed_mime_types = [
+  "image/jpeg",
+  "image/png", 
+  "application/pdf",
+  "application/json",
+  "text/plain"
+]
+virus_scanning = true
+
+# Edge Functions Configuration
+[functions]
+function_timeout = 30  # seconds
+db_connection_pool = 50
+memory_size = 1024  # MB
+
+[functions.regions]
+enabled = [
+  "us-east-1",        # Primary US
+  "eu-west-1",        # Primary EU
+  "ap-southeast-1",   # Primary APAC
+  "sa-east-1"         # Primary LATAM
+]
+
+# Realtime Configuration
+[realtime]
+enabled_tables = [
+  "wallets",
+  "transactions", 
+  "crypto_wallets",
+  "crypto_transactions",
+  "audit_log"
+]
+max_subscription = 100
+broadcast_level = "filtered"
+
+# Database Pool Configuration
+[db.pooler]
+enabled = true
+pool_mode = "transaction"
+default_pool_size = 15
+max_client_conn = 100
+
+# Monitoring and Logging
+[monitoring]
+query_logging = true
+slow_query_threshold = 1000  # ms
+statement_timeout = 30000    # ms
+log_retention_days = 30
+
+# Security Policies
+[security]
+row_level_security = true
+ssl_enforcement = true
+allowed_hosts = ["localhost", "*.supabase.co"]
+trusted_proxies = ["10.0.0.0/8"]
+
+# Rate Limiting
+[rate_limiting]
+enabled = true
+points = 100
+duration = 60  # seconds
+blocked_duration = 900  # 15 minutes
+
+# Backup Configuration
+[db.backup]
+enabled = true
+schedule = "0 0 * * *"  # Daily at midnight
+retention_days = 30
+encryption = true
+
+# Email Configuration
+[auth.email]
+enable_confirmations = true
+double_confirm_changes = true
+template_folder = "email-templates"
+
+# OAuth Configuration
+[auth.external]
+enabled = true
+providers = []  # Add OAuth providers as needed
+
+# CORS Configuration
+[api.cors]
+enabled = true
+max_age = 86400
+credentials = true
+allowed_headers = ["*"]
+allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+
+# Cache Configuration
+[cache]
+enabled = true
+ttl = 3600  # 1 hour default
+max_size = "2GB"
+
+# Webhook Configuration
+[webhooks]
+enabled = true
+signing_secret = true
+retry_attempts = 3
+timeout = 10  # seconds
+
+# File Storage Rules
+[storage.rules]
+enable_multiple_buckets = true
+default_visibility = "private"
+max_upload_file_count = 10
+
+# Dashboard Configuration
+[dashboard]
+port = 54323
+enable_remote_access = false
