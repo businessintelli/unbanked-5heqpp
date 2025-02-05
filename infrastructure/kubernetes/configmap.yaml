@@ -1,0 +1,52 @@
+# kubernetes v1.25+
+# ConfigMap for Unbanked platform configuration
+# This ConfigMap provides non-sensitive configuration data for backend and frontend services
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: unbanked-config
+  namespace: unbanked
+  labels:
+    app: unbanked
+    environment: production
+    component: config
+    managed-by: kubernetes
+    version: 1.0.0
+  annotations:
+    description: "Configuration for Unbanked platform services"
+    lastUpdated: "2024-01-21"
+data:
+  # Server Configuration
+  NODE_ENV: "production"
+  PORT: "3000"
+  API_VERSION: "v1"
+  LOG_LEVEL: "info"
+  MAX_CONNECTIONS: "100"
+  RATE_LIMIT: "1000"
+  RATE_LIMIT_WINDOW: "15m"
+  CORS_ORIGINS: "https://unbanked.com,https://app.unbanked.com"
+  API_TIMEOUT: "30s"
+  HEALTH_CHECK_PATH: "/health"
+  METRICS_PATH: "/metrics"
+
+  # Database Configuration
+  DATABASE_HOST: "unbanked-db"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "unbanked"
+
+  # Cache Configuration
+  REDIS_HOST: "unbanked-redis"
+  REDIS_PORT: "6379"
+
+  # Authentication Configuration
+  ACCESS_TOKEN_EXPIRY: "15m"
+  REFRESH_TOKEN_EXPIRY: "7d"
+
+  # External Services Configuration
+  COINGECKO_API_URL: "https://api.coingecko.com/api/v3"
+  PLAID_ENV: "production"
+
+  # Frontend Configuration
+  VITE_API_URL: "https://api.unbanked.com"
+  VITE_API_VERSION: "v1"
+  VITE_WEBSOCKET_URL: "wss://api.unbanked.com"
